@@ -1,0 +1,101 @@
+
+#Quick Start & Config:
+#1. pip install -r requirements.txt
+#2. Set TARGET_URL and update CSS selectors in 'parse_products' if needed.
+#3. python main.py
+
+========================================================================================================================================
+#If you need to: customize/upgrade/integrate or just dont wanna to set it by yourself, then just text me.
+#Telegram for work: @Myhamed91
+========================================================================================================================================
+
+import csv
+from datetime import datetime
+import random
+import time
+from bs4 import BeautifulSoup
+import requests
+
+# ==========================================
+# CONFIGURATION
+# ==========================================
+TARGET_URL = "https://example.com/products"  # Replace with your target website
+OUTPUT_FILE = "scraped_data.csv"
+
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
+        " like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+
+def fetch_page(url):
+  try:
+    time.sleep(random.uniform(1.0, 3.0))
+    response = requests.get(url, headers=HEADERS, timeout=10)
+    response.raise_for_status()
+    return response.text
+  except requests.exceptions.RequestException as e:
+    print(f"[-] Error fetching {url}: {e}")
+    return None
+
+
+def parse_products(html):
+  soup = BeautifulSoup(html, "html.parser")
+  products = []
+
+  # Update these selectors based on your target website's HTML structure
+  for card in soup.find_all("div", class_=["product-item", "card"]):
+    try:
+      name_el = card.find(["h2", "h3", "a"], class_=["title", "product-name"])
+      price_el = card.find("span", class_=["price", "current-price"])
+
+      name = name_el.get_text(strip=True) if name_el else "N/A"
+      price = price_el.get_text(strip=True) if price_el else "N/A"
+
+      products.append(
+          {"Title": name, "Price": price, "Timestamp": datetime.now()}
+      )
+    except AttributeError:
+      continue
+
+  return products
+
+
+def save_to_csv(data, filename):
+  if not data:
+    print("[-] No data to save.")
+    return
+
+  keys = data[0].keys()
+  try:
+    with open(filename, mode="w", newline="", encoding="utf-8-sig") as output_file:
+      dict_writer = csv.DictWriter(output_file, fieldnames=keys)
+      dict_writer.writeheader()
+      dict_writer.writerows(data)
+    print(f"[+] Successfully saved {len(data)} items to {filename}")
+  except IOError as e:
+    print(f"[-] I/O error while saving file: {e}")
+
+
+def main():
+  print(f"[*] Starting scrape for: {TARGET_URL}")
+  html = fetch_page(TARGET_URL)
+
+  if html:
+    data = parse_products(html)
+    save_to_csv(data, OUTPUT_FILE)
+  else:
+    print("[-] Failed to retrieve data.")
+
+
+if __name__ == "__main__":
+  main()
+
+
+========================================================================================================================================
+#If you need to: customize/upgrade/integrate or just dont wanna to set it by yourself, then just text me.
+#Telegram for work: @Myhamed91
+========================================================================================================================================
